@@ -85,7 +85,7 @@ Interactive docs: **Swagger UI at `/swagger`** (Development environment only).
 ```bash
 dotnet run --project src/FoodTruckApi                     # http://localhost:5065
 dotnet run --project src/FoodTruckApi --launch-profile https   # + https://localhost:7007
-dotnet test                                               # 85 tests
+dotnet test                                               # 91 tests
 ```
 
 Then open `http://localhost:5065/swagger`, or:
@@ -146,11 +146,13 @@ Each truck's keywords are computed **once at load time** (`FoodTruck.FoodTerms`)
 `LexicalFoodMatcher` then scores a query against a truck (0–1):
 
 - exact stem match → `1.0`
-- one term contained in the other → `0.9`
-- otherwise fuzzy similarity (`FuzzySharp.WeightedRatio`), with a floor of `0.70`
+- otherwise `FuzzySharp.WeightedRatio` (which blends full and substring similarity),
+  scaled to 0–1, with anything below ~`0.55` treated as no match
+- terms shorter than 4 characters must match exactly — short tokens collide far
+  too easily (`ice` is a substring of `rice`), so they are never fuzzy-matched
 
 The truck's score is its best query-term / truck-term pair. A truck is included
-when its score ≥ `FoodMatching:MatchThreshold` (default `0.6`).
+when its score ≥ `FoodMatching:MatchThreshold` (default `0.7`).
 
 This is **lexical only** — it handles plurals (`tacos` → `taco`), typos
 (`burito` → `burrito` ≈ 0.92) and multi-word queries (`korean bbq`), but it has
@@ -172,11 +174,13 @@ on invalid values):
     "MaxAmountOfResults": 50        // upper bound; DefaultAmountOfResults must not exceed it
   },
   "FoodMatching": {
-    "MatchThreshold": 0.6           // 0..1; higher is stricter
+    "MatchThreshold": 0.7           // 0..1; higher is stricter (useful range ~0.55–1.0)
   },
   "RateLimiting": {
-    "PermitLimit": 100,             // requests per window, per client IP
-    "WindowSeconds": 60
+    "PermitLimit": 100,             // requests per window, per client
+    "WindowSeconds": 60,
+    "ClientIdentifierHeader": ""    // e.g. "X-Forwarded-For" when behind a trusted proxy;
+                                    // empty => partition by the direct connection IP
   },
   "Cors": {
     "AllowedOrigins": []            // empty => no CORS headers (same-origin only)
@@ -221,7 +225,9 @@ Key decisions:
 
 ## Security / hardening
 
-- **Rate limiting** — fixed window per client IP; `429` + `Retry-After` + problem body.
+- **Rate limiting** — fixed window per client; `429` + `Retry-After` + problem body.
+  Partitions by the direct connection IP, or by a configured header
+  (`RateLimiting:ClientIdentifierHeader`) when behind a trusted reverse proxy.
 - **Security headers** — `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
   `Referrer-Policy: no-referrer`, `X-Permitted-Cross-Domain-Policies: none`; the
   `Server` header is suppressed.
@@ -240,7 +246,7 @@ Key decisions:
 dotnet test
 ```
 
-85 xUnit tests: `Result` / `Coordinate` invariants, the CSV loader (real dataset →
+91 xUnit tests: `Result` / `Coordinate` invariants, the CSV loader (real dataset →
 exactly 158 trucks, quoted commas preserved), Haversine against known reference
 distances, the text normalizer and fuzzy matcher, the handler (ordering,
 threshold, limits — with a stub matcher), request validation, and full HTTP

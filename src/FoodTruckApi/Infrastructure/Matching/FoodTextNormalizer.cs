@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using Porter2Stemmer;
 
@@ -87,11 +86,6 @@ internal static class FoodTextNormalizer
         return builder.ToString();
     }
 
-    // Kept internal-only helper visible for targeted tests.
-    internal static string NormalizeWord(string value) => Normalize(value);
-
-    internal static string StemWord(string value) =>
-        Stemmer.Stem(Normalize(value)).Value;
-
-    internal static CultureInfo Culture => CultureInfo.InvariantCulture;
+    /// <summary>Normalize then stem a single word. Exposed for targeted tests.</summary>
+    internal static string StemWord(string value) => Stemmer.Stem(Normalize(value)).Value;
 }

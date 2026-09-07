@@ -47,6 +47,31 @@ public class HardeningTests
     }
 
     [Fact]
+    public async Task Rate_limit_partitions_by_the_configured_client_header()
+    {
+        using var factory = FactoryWith(
+            ("RateLimiting:PermitLimit", "2"),
+            ("RateLimiting:WindowSeconds", "60"),
+            ("RateLimiting:ClientIdentifierHeader", "X-Forwarded-For"));
+        var client = factory.CreateClient();
+
+        // "clientA" uses its whole allowance...
+        for (var i = 0; i < 3; i++)
+        {
+            var exhaust = new HttpRequestMessage(HttpMethod.Get, ValidQuery);
+            exhaust.Headers.Add("X-Forwarded-For", "clientA");
+            await client.SendAsync(exhaust);
+        }
+
+        // ...and "clientB" is still unaffected.
+        var other = new HttpRequestMessage(HttpMethod.Get, ValidQuery);
+        other.Headers.Add("X-Forwarded-For", "clientB");
+        var response = await client.SendAsync(other);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task No_cors_headers_are_sent_by_default()
     {
         using var factory = new WebApplicationFactory<Program>();

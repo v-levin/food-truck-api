@@ -48,11 +48,13 @@ public sealed class FindFoodTrucksHandler
             .Take(query.AmountOfResults)
             .ToArray();
 
+        // Coordinates are rounded to ~1 km so the logs are useful for debugging without
+        // recording precise caller locations.
         _logger.LogInformation(
-            "Food truck search near {Latitude},{Longitude} (food preference: {FoodPreference}) " +
+            "Food truck search near ~{Latitude},{Longitude} (food preference: {FoodPreference}) " +
             "matched {MatchedCount} of {TotalCount} trucks; returned {ReturnedCount}.",
-            query.Origin.Latitude,
-            query.Origin.Longitude,
+            Math.Round(query.Origin.Latitude, 2),
+            Math.Round(query.Origin.Longitude, 2),
             query.Food ?? "(none)",
             matched.Length,
             all.Count,

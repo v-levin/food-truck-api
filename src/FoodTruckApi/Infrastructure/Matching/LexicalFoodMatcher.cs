@@ -12,8 +12,16 @@ namespace FoodTruckApi.Infrastructure.Matching;
 /// </summary>
 internal sealed class LexicalFoodMatcher : IFoodMatcher
 {
-    // Below this fuzzy ratio the two tokens are treated as unrelated, so their score is 0.
-    private const int FuzzyFloor = 70;
+    /// <summary>
+    /// Terms shorter than this must match exactly. Short tokens collide far too easily
+    /// under substring and fuzzy comparison (e.g. "ice" is a substring of "rice", and
+    /// three of four characters match), which produced confident matches for unrelated
+    /// foods.
+    /// </summary>
+    private const int MinComparableLength = 4;
+
+    /// <summary>Fuzzy ratios below this mean "unrelated"; the score is 0.</summary>
+    private const int FuzzyFloor = 55;
 
     public double Score(string foodQuery, FoodTruck truck)
     {
@@ -47,14 +55,13 @@ internal sealed class LexicalFoodMatcher : IFoodMatcher
             return 1d;
         }
 
-        // One term contained in the other (e.g. "chicken" in "chickenwings").
-        if (queryTerm.Length >= 3 &&
-            (truckTerm.Contains(queryTerm, StringComparison.Ordinal) ||
-             queryTerm.Contains(truckTerm, StringComparison.Ordinal)))
+        if (queryTerm.Length < MinComparableLength || truckTerm.Length < MinComparableLength)
         {
-            return 0.9d;
+            return 0d;
         }
 
+        // WeightedRatio already blends full and partial (substring) similarity, so it
+        // covers typos ("burito"/"burrito") and roots inside compounds ("shake"/"milkshake").
         var ratio = Fuzz.WeightedRatio(queryTerm, truckTerm);
         return ratio < FuzzyFloor ? 0d : ratio / 100d;
     }

@@ -46,6 +46,32 @@ public class LexicalFoodMatcherTests
         Assert.True(score >= 0.9d, $"expected 'korean' to carry the match, got {score}");
     }
 
+    [Theory]
+    [InlineData("ice", "Rice Noodles: Fried Rice")]           // "ice" is a substring of "rice"
+    [InlineData("ice cream", "Chinese Rice: Chow Mein")]      // still must not match on "ice"
+    [InlineData("tea", "Steak sandwiches")]                   // 3 chars, near-substring
+    public void A_short_query_term_does_not_match_a_longer_word_that_merely_contains_it(
+        string query, string foodItems)
+    {
+        var score = _matcher.Score(query, TruckServing(foodItems));
+
+        Assert.True(score < 0.7d, $"expected no match for a short term, got {score}");
+    }
+
+    [Fact]
+    public void Ice_cream_still_matches_an_actual_ice_cream_truck()
+    {
+        Assert.Equal(1d, _matcher.Score("ice cream", TruckServing("Ice Cream: Waffle Cones")));
+    }
+
+    [Fact]
+    public void A_root_word_matches_inside_a_compound()
+    {
+        var score = _matcher.Score("shake", TruckServing("Milkshakes: Sundaes"));
+
+        Assert.True(score >= 0.75d, $"expected 'shake' to match 'milkshake', got {score}");
+    }
+
     [Fact]
     public void Blank_query_scores_zero()
     {

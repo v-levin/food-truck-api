@@ -70,7 +70,7 @@ builder.Services.AddRateLimiter(options =>
             .CurrentValue;
 
         return RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            partitionKey: ResolveClientKey(context, limits.ClientIdentifierHeader),
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = limits.PermitLimit,
@@ -165,6 +165,25 @@ app.UseRateLimiter();
 app.MapControllers();
 
 app.Run();
+
+// Picks the rate-limit partition key: a trusted proxy header if one is configured,
+// otherwise the direct connection IP.
+static string ResolveClientKey(HttpContext context, string? clientIdentifierHeader)
+{
+    if (!string.IsNullOrWhiteSpace(clientIdentifierHeader) &&
+        context.Request.Headers.TryGetValue(clientIdentifierHeader, out var header))
+    {
+        var first = header.ToString()
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault();
+        if (!string.IsNullOrEmpty(first))
+        {
+            return first;
+        }
+    }
+
+    return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+}
 
 /// <summary>Exposed so <c>WebApplicationFactory</c> can boot the app in integration tests.</summary>
 public partial class Program;

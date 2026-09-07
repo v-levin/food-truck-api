@@ -17,7 +17,10 @@ public sealed class FindFoodTrucksRequest
     [FromQuery(Name = "longitude")]
     public double? Longitude { get; init; }
 
-    /// <summary>How many trucks to return. Optional; defaults to 10, must be between 1 and 50.</summary>
+    /// <summary>
+    /// How many trucks to return. Optional; when omitted the configured default is used
+    /// (10 out of the box). Must be between 1 and the configured maximum (50 out of the box).
+    /// </summary>
     [FromQuery(Name = "amountOfResults")]
     public int? AmountOfResults { get; init; }
 
