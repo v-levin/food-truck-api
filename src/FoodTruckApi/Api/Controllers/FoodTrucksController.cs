@@ -26,9 +26,11 @@ public sealed class FoodTrucksController : ControllerBase
     /// </remarks>
     /// <response code="200">Matching trucks, nearest first. May be empty.</response>
     /// <response code="400">One or more query parameters were missing or out of range.</response>
+    /// <response code="429">Rate limit exceeded.</response>
     [HttpGet]
     [ProducesResponseType(typeof(FindFoodTrucksResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public ActionResult<FindFoodTrucksResponse> Get([FromQuery] FindFoodTrucksRequest request)
     {
         var query = _validator.Validate(request);
