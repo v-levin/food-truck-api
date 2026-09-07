@@ -2,6 +2,7 @@ using FoodTruckApi.Application.Abstractions;
 using FoodTruckApi.Configuration;
 using FoodTruckApi.Domain;
 using FoodTruckApi.Domain.Common;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FoodTruckApi.Application.FindFoodTrucks;
@@ -17,22 +18,26 @@ public sealed class FindFoodTrucksHandler
     private readonly IDistanceCalculator _distanceCalculator;
     private readonly IFoodMatcher _foodMatcher;
     private readonly FoodMatchingOptions _matchingOptions;
+    private readonly ILogger<FindFoodTrucksHandler> _logger;
 
     public FindFoodTrucksHandler(
         IFoodTruckRepository repository,
         IDistanceCalculator distanceCalculator,
         IFoodMatcher foodMatcher,
-        IOptions<FoodMatchingOptions> matchingOptions)
+        IOptions<FoodMatchingOptions> matchingOptions,
+        ILogger<FindFoodTrucksHandler> logger)
     {
         _repository = repository;
         _distanceCalculator = distanceCalculator;
         _foodMatcher = foodMatcher;
         _matchingOptions = matchingOptions.Value;
+        _logger = logger;
     }
 
     public Result<IReadOnlyList<NearbyFoodTruck>> Handle(FindFoodTrucksQuery query)
     {
-        var matched = MatchFood(query.Food, _repository.GetAll());
+        var all = _repository.GetAll();
+        var matched = MatchFood(query.Food, all).ToArray();
 
         var nearest = matched
             .Select(match => new NearbyFoodTruck(
@@ -42,6 +47,16 @@ public sealed class FindFoodTrucksHandler
             .OrderBy(nearby => nearby.DistanceKm)
             .Take(query.AmountOfResults)
             .ToArray();
+
+        _logger.LogInformation(
+            "Food truck search near {Latitude},{Longitude} (food preference: {FoodPreference}) " +
+            "matched {MatchedCount} of {TotalCount} trucks; returned {ReturnedCount}.",
+            query.Origin.Latitude,
+            query.Origin.Longitude,
+            query.Food ?? "(none)",
+            matched.Length,
+            all.Count,
+            nearest.Length);
 
         return Result.Success<IReadOnlyList<NearbyFoodTruck>>(nearest);
     }

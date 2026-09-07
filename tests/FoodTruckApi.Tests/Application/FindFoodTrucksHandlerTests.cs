@@ -3,6 +3,7 @@ using FoodTruckApi.Application.FindFoodTrucks;
 using FoodTruckApi.Configuration;
 using FoodTruckApi.Domain;
 using FoodTruckApi.Infrastructure.Geo;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace FoodTruckApi.Tests.Application;
@@ -23,7 +24,8 @@ public class FindFoodTrucksHandlerTests
             new InMemoryFoodTruckRepository(trucks),
             Distance,
             matcher,
-            Options.Create(new FoodMatchingOptions { MatchThreshold = threshold }));
+            Options.Create(new FoodMatchingOptions { MatchThreshold = threshold }),
+            NullLogger<FindFoodTrucksHandler>.Instance);
 
     private static FindFoodTrucksHandler HandlerFor(params FoodTruck[] trucks) =>
         HandlerFor(new StubFoodMatcher(new Dictionary<string, double>()), threshold: 0.6, trucks);

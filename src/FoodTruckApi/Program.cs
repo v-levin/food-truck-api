@@ -80,6 +80,14 @@ builder.Services.AddRateLimiter(options =>
     });
     options.OnRejected = async (context, cancellationToken) =>
     {
+        context.HttpContext.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("FoodTruckApi.RateLimiting")
+            .LogWarning(
+                "Rate limit exceeded for {ClientIp} on {RequestPath}.",
+                context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                context.HttpContext.Request.Path);
+
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
         {
             context.HttpContext.Response.Headers.RetryAfter =
@@ -113,6 +121,18 @@ var app = builder.Build();
 
 // Fail fast: load and validate the dataset during startup instead of on the first request.
 app.Services.GetRequiredService<IFoodTruckRepository>();
+
+var searchOptions = app.Services.GetRequiredService<IOptions<FoodTruckSearchOptions>>().Value;
+var matchingOptions = app.Services.GetRequiredService<IOptions<FoodMatchingOptions>>().Value;
+var rateLimitOptions = app.Services.GetRequiredService<IOptions<RateLimitingOptions>>().Value;
+app.Logger.LogInformation(
+    "Configuration: results default {DefaultResults}, max {MaxResults}; match threshold {MatchThreshold}; " +
+    "rate limit {PermitLimit} requests / {WindowSeconds}s per client.",
+    searchOptions.DefaultAmountOfResults,
+    searchOptions.MaxAmountOfResults,
+    matchingOptions.MatchThreshold,
+    rateLimitOptions.PermitLimit,
+    rateLimitOptions.WindowSeconds);
 
 // Turn unhandled exceptions into RFC 9457 problem responses (no stack traces in prod).
 app.UseExceptionHandler();
