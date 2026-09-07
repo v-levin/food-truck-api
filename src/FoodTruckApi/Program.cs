@@ -1,13 +1,21 @@
+using FoodTruckApi.Application.Abstractions;
+using FoodTruckApi.Infrastructure.Csv;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// The dataset is parsed once and served as an immutable snapshot for the app's lifetime.
+builder.Services.AddSingleton<IFoodTruckRepository>(serviceProvider =>
+    CsvFoodTruckRepository.CreateFromEmbeddedDataset(
+        serviceProvider.GetRequiredService<ILogger<CsvFoodTruckRepository>>()));
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Fail fast: load and validate the dataset during startup instead of on the first request.
+app.Services.GetRequiredService<IFoodTruckRepository>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -17,3 +25,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.Run();
+
+/// <summary>Exposed so <c>WebApplicationFactory</c> can boot the app in integration tests.</summary>
+public partial class Program;
