@@ -70,6 +70,51 @@ public class FindFoodTrucksRequestValidatorTests
     }
 
     [Fact]
+    public void Trims_a_food_preference_and_passes_it_through()
+    {
+        var result = ValidatorWith().Validate(new FindFoodTrucksRequest
+        {
+            Latitude = 37.77,
+            Longitude = -122.42,
+            Food = "  Tacos  ",
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Tacos", result.Value.Food);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Treats_a_blank_food_preference_as_no_preference(string? food)
+    {
+        var result = ValidatorWith().Validate(new FindFoodTrucksRequest
+        {
+            Latitude = 37.77,
+            Longitude = -122.42,
+            Food = food,
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Food);
+    }
+
+    [Fact]
+    public void Rejects_a_food_preference_over_the_length_cap()
+    {
+        var result = ValidatorWith().Validate(new FindFoodTrucksRequest
+        {
+            Latitude = 37.77,
+            Longitude = -122.42,
+            Food = new string('a', 101),
+        });
+
+        Assert.True(result.IsFailure);
+        Assert.Contains(result.Errors, e => e.Code == "food");
+    }
+
+    [Fact]
     public void Rejects_an_origin_outside_valid_coordinate_ranges()
     {
         var result = ValidatorWith().Validate(new FindFoodTrucksRequest

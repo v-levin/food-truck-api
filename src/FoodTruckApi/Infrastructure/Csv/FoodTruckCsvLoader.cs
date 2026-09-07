@@ -2,6 +2,7 @@ using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
 using FoodTruckApi.Domain;
+using FoodTruckApi.Infrastructure.Matching;
 
 namespace FoodTruckApi.Infrastructure.Csv;
 
@@ -89,7 +90,10 @@ internal static class FoodTruckCsvLoader
             FacilityType: record.FacilityType,
             Address: record.Address,
             Location: location.Value,
-            FoodItems: record.FoodItems);
+            FoodItems: record.FoodItems)
+        {
+            FoodTerms = FoodTextNormalizer.ExtractTerms(record.FoodItems),
+        };
     }
 
     private static bool TryParseCoordinatePart(string? raw, out double value) =>

@@ -8,4 +8,5 @@ namespace FoodTruckApi.Application.FindFoodTrucks;
 /// </summary>
 /// <param name="Origin">The location to search around.</param>
 /// <param name="AmountOfResults">Maximum number of trucks to return (already checked against the allowed range).</param>
-public sealed record FindFoodTrucksQuery(Coordinate Origin, int AmountOfResults);
+/// <param name="Food">Optional food preference to filter by. Null or empty means no filtering.</param>
+public sealed record FindFoodTrucksQuery(Coordinate Origin, int AmountOfResults, string? Food = null);

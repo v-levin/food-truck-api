@@ -20,4 +20,8 @@ public sealed class FindFoodTrucksRequest
     /// <summary>How many trucks to return. Optional; defaults to 10, must be between 1 and 50.</summary>
     [FromQuery(Name = "amountOfResults")]
     public int? AmountOfResults { get; init; }
+
+    /// <summary>Food preference to filter by, e.g. <c>tacos</c>. Optional; omit to get every nearby truck.</summary>
+    [FromQuery(Name = "food")]
+    public string? Food { get; init; }
 }

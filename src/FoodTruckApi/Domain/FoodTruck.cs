@@ -17,4 +17,11 @@ public sealed record FoodTruck(
     string FacilityType,
     string Address,
     Coordinate Location,
-    string FoodItems);
+    string FoodItems)
+{
+    /// <summary>
+    /// Normalized, stemmed keywords derived from <see cref="FoodItems"/>, used for food
+    /// matching. Populated once when the dataset is loaded; empty until then.
+    /// </summary>
+    public IReadOnlyList<string> FoodTerms { get; init; } = Array.Empty<string>();
+}

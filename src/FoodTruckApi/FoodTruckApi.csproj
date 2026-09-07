@@ -11,15 +11,16 @@
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="FuzzySharp" Version="2.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.30" />
+    <PackageReference Include="Porter2Stemmer" Version="1.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- The SF open-data dump is compiled into the assembly so the app ships as a
          single artifact and the data cannot be swapped or tampered with at runtime. -->
-    <EmbeddedResource Include="..\..\Mobile_Food_Facility_Permit.csv"
-                      LogicalName="FoodTruckApi.Data.Mobile_Food_Facility_Permit.csv" />
+    <EmbeddedResource Include="..\..\Mobile_Food_Facility_Permit.csv" LogicalName="FoodTruckApi.Data.Mobile_Food_Facility_Permit.csv" />
   </ItemGroup>
 
   <ItemGroup>

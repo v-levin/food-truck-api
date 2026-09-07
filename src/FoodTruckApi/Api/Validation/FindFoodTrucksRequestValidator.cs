@@ -15,6 +15,7 @@ namespace FoodTruckApi.Api.Validation;
 public sealed class FindFoodTrucksRequestValidator
 {
     internal const int MinAmountOfResults = 1;
+    internal const int MaxFoodLength = 100;
 
     private readonly FoodTruckSearchOptions _options;
 
@@ -48,6 +49,15 @@ public sealed class FindFoodTrucksRequestValidator
                 $"amountOfResults must be between {MinAmountOfResults} and {_options.MaxAmountOfResults}."));
         }
 
+        // A blank food value means "no preference"; a non-blank one has a length cap.
+        var food = string.IsNullOrWhiteSpace(request.Food) ? null : request.Food.Trim();
+        if (food is { Length: > MaxFoodLength })
+        {
+            errors.Add(Error.Validation(
+                "food",
+                $"food must be {MaxFoodLength} characters or fewer."));
+        }
+
         if (errors.Count > 0)
         {
             return Result.Failure<FindFoodTrucksQuery>(errors);
@@ -63,6 +73,6 @@ public sealed class FindFoodTrucksRequestValidator
             return Result.Failure<FindFoodTrucksQuery>(reKeyed);
         }
 
-        return new FindFoodTrucksQuery(origin.Value, amountOfResults);
+        return new FindFoodTrucksQuery(origin.Value, amountOfResults, food);
     }
 }

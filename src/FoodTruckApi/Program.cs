@@ -4,6 +4,7 @@ using FoodTruckApi.Application.FindFoodTrucks;
 using FoodTruckApi.Configuration;
 using FoodTruckApi.Infrastructure.Csv;
 using FoodTruckApi.Infrastructure.Geo;
+using FoodTruckApi.Infrastructure.Matching;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,11 @@ builder.Services.AddControllers();
 
 builder.Services.AddOptions<FoodTruckSearchOptions>()
     .Bind(builder.Configuration.GetSection(FoodTruckSearchOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<FoodMatchingOptions>()
+    .Bind(builder.Configuration.GetSection(FoodMatchingOptions.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
@@ -38,6 +44,7 @@ builder.Services.AddSingleton<IFoodTruckRepository>(serviceProvider =>
         serviceProvider.GetRequiredService<ILogger<CsvFoodTruckRepository>>()));
 
 builder.Services.AddSingleton<IDistanceCalculator, HaversineDistanceCalculator>();
+builder.Services.AddSingleton<IFoodMatcher, LexicalFoodMatcher>();
 builder.Services.AddScoped<FindFoodTrucksHandler>();
 builder.Services.AddSingleton<FindFoodTrucksRequestValidator>();
 

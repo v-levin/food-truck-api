@@ -25,6 +25,7 @@ public class FoodTruckCsvLoaderTests
             Assert.NotNull(truck.Location);
             Assert.InRange(truck.Location.Latitude, 37.6, 37.9);
             Assert.InRange(truck.Location.Longitude, -122.6, -122.3);
+            Assert.NotEmpty(truck.FoodTerms);
         });
     }
 

@@ -10,7 +10,7 @@ public sealed record FindFoodTrucksResponse(
     IReadOnlyList<FoodTruckResult> Results);
 
 /// <summary>The query the server actually ran, after defaults were applied.</summary>
-public sealed record FoodTrucksQuery(double Latitude, double Longitude, int AmountOfResults);
+public sealed record FoodTrucksQuery(double Latitude, double Longitude, int AmountOfResults, string? Food);
 
 /// <summary>A single food truck in the result set.</summary>
 /// <param name="Name">Permit holder.</param>
@@ -20,6 +20,9 @@ public sealed record FoodTrucksQuery(double Latitude, double Longitude, int Amou
 /// <param name="Longitude">Pitch longitude.</param>
 /// <param name="DistanceKm">Great-circle distance from the requested origin, in kilometres.</param>
 /// <param name="FoodItems">Raw food description from the permit.</param>
+/// <param name="MatchScore">
+/// How well this truck matched the food preference (0..1). Null when no preference was given.
+/// </param>
 public sealed record FoodTruckResult(
     string Name,
     string FacilityType,
@@ -27,4 +30,5 @@ public sealed record FoodTruckResult(
     double Latitude,
     double Longitude,
     double DistanceKm,
-    string FoodItems);
+    string FoodItems,
+    double? MatchScore);

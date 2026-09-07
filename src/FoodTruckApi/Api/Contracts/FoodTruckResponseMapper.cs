@@ -6,6 +6,7 @@ namespace FoodTruckApi.Api.Contracts;
 internal static class FoodTruckResponseMapper
 {
     private const int DistanceDecimals = 3;
+    private const int ScoreDecimals = 3;
 
     public static FindFoodTrucksResponse ToResponse(
         FindFoodTrucksQuery query,
@@ -17,7 +18,8 @@ internal static class FoodTruckResponseMapper
             Query: new FoodTrucksQuery(
                 query.Origin.Latitude,
                 query.Origin.Longitude,
-                query.AmountOfResults),
+                query.AmountOfResults,
+                query.Food),
             Count: results.Length,
             Results: results);
     }
@@ -33,6 +35,7 @@ internal static class FoodTruckResponseMapper
             Latitude: truck.Location.Latitude,
             Longitude: truck.Location.Longitude,
             DistanceKm: Math.Round(nearby.DistanceKm, DistanceDecimals),
-            FoodItems: truck.FoodItems);
+            FoodItems: truck.FoodItems,
+            MatchScore: nearby.MatchScore is { } score ? Math.Round(score, ScoreDecimals) : null);
     }
 }
