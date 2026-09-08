@@ -72,8 +72,9 @@ public sealed class FindFoodTrucksHandler
             return trucks.Select(truck => (truck, (double?)null));
         }
 
+        var score = _foodMatcher.ForQuery(food);
         return trucks
-            .Select(truck => (Truck: truck, Score: _foodMatcher.Score(food, truck)))
+            .Select(truck => (Truck: truck, Score: score(truck)))
             .Where(match => match.Score >= _matchingOptions.MatchThreshold)
             .Select(match => (match.Truck, (double?)match.Score));
     }

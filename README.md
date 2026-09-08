@@ -85,7 +85,7 @@ Interactive docs: **Swagger UI at `/swagger`** (Development environment only).
 ```bash
 dotnet run --project src/FoodTruckApi                     # http://localhost:5065
 dotnet run --project src/FoodTruckApi --launch-profile https   # + https://localhost:7007
-dotnet test                                               # 91 tests
+dotnet test                                               # 99 tests
 ```
 
 Then open `http://localhost:5065/swagger`, or:
@@ -246,7 +246,7 @@ Key decisions:
 dotnet test
 ```
 
-91 xUnit tests: `Result` / `Coordinate` invariants, the CSV loader (real dataset →
+99 xUnit tests: `Result` / `Coordinate` invariants, the CSV loader (real dataset →
 exactly 158 trucks, quoted commas preserved), Haversine against known reference
 distances, the text normalizer and fuzzy matcher, the handler (ordering,
 threshold, limits — with a stub matcher), request validation, and full HTTP

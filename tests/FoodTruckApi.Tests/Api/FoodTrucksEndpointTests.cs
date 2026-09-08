@@ -69,6 +69,8 @@ public class FoodTrucksEndpointTests : IClassFixture<WebApplicationFactory<Progr
     [InlineData("latitude=91&longitude=0")]
     [InlineData("latitude=0&longitude=181")]
     [InlineData("latitude=37.79&longitude=-122.39&amountOfResults=51")]
+    [InlineData("latitude=37.79&longitude=-122.39&amountOfResults=abc")]
+    [InlineData("latitude=37.79&longitude=-122.39&amountOfResults=2.5")]
     [InlineData("latitude=abc&longitude=-122.39")]
     public async Task Rejects_out_of_range_or_unparseable_values(string queryString)
     {

@@ -38,8 +38,8 @@ internal sealed class StubFoodMatcher : IFoodMatcher
         _default = @default;
     }
 
-    public double Score(string foodQuery, FoodTruck truck) =>
-        _scoresByTruckName.TryGetValue(truck.Name, out var score) ? score : _default;
+    public Func<FoodTruck, double> ForQuery(string foodQuery) =>
+        truck => _scoresByTruckName.TryGetValue(truck.Name, out var score) ? score : _default;
 }
 
 internal sealed class InMemoryFoodTruckRepository : IFoodTruckRepository

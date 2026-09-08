@@ -23,9 +23,14 @@ internal sealed class LexicalFoodMatcher : IFoodMatcher
     /// <summary>Fuzzy ratios below this mean "unrelated"; the score is 0.</summary>
     private const int FuzzyFloor = 55;
 
-    public double Score(string foodQuery, FoodTruck truck)
+    public Func<FoodTruck, double> ForQuery(string foodQuery)
     {
         var queryTerms = FoodTextNormalizer.ExtractQueryTerms(foodQuery);
+        return truck => Score(queryTerms, truck);
+    }
+
+    private static double Score(IReadOnlyList<string> queryTerms, FoodTruck truck)
+    {
         if (queryTerms.Count == 0 || truck.FoodTerms.Count == 0)
         {
             return 0d;

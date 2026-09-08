@@ -80,18 +80,25 @@ builder.Services.AddRateLimiter(options =>
     });
     options.OnRejected = async (context, cancellationToken) =>
     {
+        var limits = context.HttpContext.RequestServices
+            .GetRequiredService<IOptionsMonitor<RateLimitingOptions>>()
+            .CurrentValue;
+
         context.HttpContext.RequestServices
             .GetRequiredService<ILoggerFactory>()
             .CreateLogger("FoodTruckApi.RateLimiting")
             .LogWarning(
-                "Rate limit exceeded for {ClientIp} on {RequestPath}.",
-                context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                "Rate limit exceeded for {ClientKey} on {RequestPath}.",
+                ResolveClientKey(context.HttpContext, limits.ClientIdentifierHeader),
                 context.HttpContext.Request.Path);
 
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
         {
+            // Round any positive remainder up to at least one second so a client that
+            // honours the header does not immediately retry into the same window.
+            var seconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
             context.HttpContext.Response.Headers.RetryAfter =
-                ((int)retryAfter.TotalSeconds).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
         await context.HttpContext.Response.WriteAsJsonAsync(
@@ -101,6 +108,8 @@ builder.Services.AddRateLimiter(options =>
                 Title = "Too many requests.",
                 Detail = "Rate limit exceeded. Retry after the window resets.",
             },
+            options: null,
+            contentType: "application/problem+json",
             cancellationToken);
     };
 });
@@ -173,10 +182,10 @@ static string ResolveClientKey(HttpContext context, string? clientIdentifierHead
     if (!string.IsNullOrWhiteSpace(clientIdentifierHeader) &&
         context.Request.Headers.TryGetValue(clientIdentifierHeader, out var header))
     {
-        var first = header.ToString()
-            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .FirstOrDefault();
-        if (!string.IsNullOrEmpty(first))
+        var value = header.ToString();
+        var comma = value.IndexOf(',');
+        var first = (comma < 0 ? value : value[..comma]).Trim();
+        if (first.Length > 0)
         {
             return first;
         }

@@ -9,7 +9,9 @@ namespace FoodTruckApi.Application.Abstractions;
 public interface IFoodMatcher
 {
     /// <summary>
-    /// Returns a score in the range 0..1, where 1 is an exact match and 0 is no match.
+    /// Prepares a scorer for one preference string (any per-query work, such as parsing
+    /// the query into terms, happens once here), then returns a function that scores each
+    /// truck against it on a 0..1 scale where 1 is an exact match.
     /// </summary>
-    double Score(string foodQuery, FoodTruck truck);
+    Func<FoodTruck, double> ForQuery(string foodQuery);
 }

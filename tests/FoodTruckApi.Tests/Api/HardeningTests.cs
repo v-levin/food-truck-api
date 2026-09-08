@@ -37,13 +37,18 @@ public class HardeningTests
             ("RateLimiting:WindowSeconds", "60"));
         var client = factory.CreateClient();
 
-        HttpStatusCode? lastStatus = null;
+        HttpResponseMessage? last = null;
         for (var i = 0; i < 5; i++)
         {
-            lastStatus = (await client.GetAsync(ValidQuery)).StatusCode;
+            last = await client.GetAsync(ValidQuery);
         }
 
-        Assert.Equal(HttpStatusCode.TooManyRequests, lastStatus);
+        Assert.Equal(HttpStatusCode.TooManyRequests, last!.StatusCode);
+        Assert.Equal("application/problem+json", last.Content.Headers.ContentType?.MediaType);
+
+        // Retry-After must be a whole number of at least 1 second, never 0.
+        var retryAfter = Assert.Single(last.Headers.GetValues("Retry-After"));
+        Assert.True(int.TryParse(retryAfter, out var seconds) && seconds >= 1, $"Retry-After was '{retryAfter}'");
     }
 
     [Fact]
