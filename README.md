@@ -236,6 +236,10 @@ Infrastructure adapters: CsvFoodTruckRepository, HybridFoodMatcher,
                LocalFoodEmbedder + FoodEmbeddingIndex, HaversineDistanceCalculator
 ```
 
+`Program.cs` is ~15 lines; the DI registration and middleware pipeline live in
+`Startup/ServiceRegistration.cs` and `Startup/RequestPipeline.cs`, each grouped by
+concern.
+
 Key decisions:
 
 - **Result pattern, not exceptions**, for expected failures. A hand-rolled
