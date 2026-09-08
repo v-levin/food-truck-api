@@ -146,11 +146,13 @@ var searchOptions = app.Services.GetRequiredService<IOptions<FoodTruckSearchOpti
 var matchingOptions = app.Services.GetRequiredService<IOptions<FoodMatchingOptions>>().Value;
 var rateLimitOptions = app.Services.GetRequiredService<IOptions<RateLimitingOptions>>().Value;
 app.Logger.LogInformation(
-    "Configuration: results default {DefaultResults}, max {MaxResults}; match threshold {MatchThreshold}; " +
-    "rate limit {PermitLimit} requests / {WindowSeconds}s per client.",
+    "Configuration: results default {DefaultResults}, max {MaxResults}; match threshold {MatchThreshold} " +
+    "(semantic {SemanticFloor}..{SemanticStrong}); rate limit {PermitLimit} requests / {WindowSeconds}s per client.",
     searchOptions.DefaultAmountOfResults,
     searchOptions.MaxAmountOfResults,
     matchingOptions.MatchThreshold,
+    matchingOptions.SemanticFloor,
+    matchingOptions.SemanticStrong,
     rateLimitOptions.PermitLimit,
     rateLimitOptions.WindowSeconds);
 

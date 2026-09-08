@@ -15,13 +15,17 @@ namespace FoodTruckApi.Tests;
 /// </summary>
 public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
-    private Dictionary<string, string?> _settings = new();
+    private readonly Dictionary<string, string?> _settings = new();
     private ILoggerProvider? _loggerProvider;
 
-    /// <summary>Override configuration values (e.g. <c>("RateLimiting:PermitLimit", "1")</c>).</summary>
+    /// <summary>Override configuration values (e.g. <c>("RateLimiting:PermitLimit", "1")</c>). Additive across calls.</summary>
     public TestWebApplicationFactory WithSettings(params (string Key, string Value)[] settings)
     {
-        _settings = settings.ToDictionary(s => s.Key, s => (string?)s.Value);
+        foreach (var (key, value) in settings)
+        {
+            _settings[key] = value;
+        }
+
         return this;
     }
 

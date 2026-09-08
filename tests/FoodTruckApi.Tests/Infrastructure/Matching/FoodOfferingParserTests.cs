@@ -38,6 +38,17 @@ public class FoodOfferingParserTests
     }
 
     [Theory]
+    [InlineData("Everything, no substitutions")]
+    [InlineData("Anything - no cash, card only")]
+    public void A_bare_no_is_not_treated_as_an_exclusion(string foodItems)
+    {
+        var offering = FoodOfferingParser.Parse(foodItems);
+
+        Assert.True(offering.ServesEverything);
+        Assert.Empty(offering.Excludes);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]

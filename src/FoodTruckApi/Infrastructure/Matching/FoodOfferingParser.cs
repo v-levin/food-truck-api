@@ -17,7 +17,7 @@ internal static class FoodOfferingParser
         RegexOptions.IgnoreCase);
 
     private static readonly Regex Exclusion = new(
-        @"\b(?:everything|anything)\b.*?\b(?:except|but|besides|minus|no)\b\s+(?:for\s+)?(?<rest>.+)$",
+        @"\b(?:everything|anything)\b.*?\b(?:except|but|besides|minus)\b\s+(?:for\s+)?(?<rest>.+)$",
         RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
     // Stems of the structural words above; they carry no food meaning of their own.

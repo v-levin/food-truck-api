@@ -17,7 +17,7 @@ internal static class FoodAliases
         new[] { "burger", "hamburger", "cheeseburger" },
         new[] { "fries", "frites" },
         new[] { "shrimp", "prawn" },
-        new[] { "hotdog", "corndog", "frankfurter", "bratwurst", "kielbasa" },
+        new[] { "dog", "hotdog", "corndog", "frankfurter", "bratwurst", "kielbasa", "wiener" },
         new[] { "mexican", "taco", "burrito", "quesadilla", "torta", "pupusa", "tamale", "nachos" },
         new[] { "chinese", "wonton", "dumpling", "eggroll" },
         new[] { "japanese", "sushi", "sashimi", "ramen", "teriyaki", "tempura" },

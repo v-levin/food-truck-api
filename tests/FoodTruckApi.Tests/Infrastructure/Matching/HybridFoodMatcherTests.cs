@@ -50,11 +50,21 @@ public class HybridFoodMatcherTests
         Assert.True(Match("tacos", truck)(truck) >= 0.8d);
     }
 
-    [Fact]
-    public void A_catch_all_truck_still_excludes_what_it_rules_out()
+    [Theory]
+    [InlineData("hot dogs")]
+    [InlineData("frankfurters")]   // a synonym of the excluded food
+    [InlineData("bratwurst")]
+    public void A_catch_all_truck_still_excludes_what_it_rules_out(string query)
     {
         var truck = Serving("everything except for hot dogs");
-        Assert.True(Match("hot dogs", truck)(truck) < 0.7d);
+        Assert.Equal(0d, Match(query, truck)(truck));
+    }
+
+    [Fact]
+    public void A_catch_all_truck_that_also_lists_a_food_scores_that_food_fully()
+    {
+        var truck = Serving("Everything: Tacos");
+        Assert.Equal(1d, Match("tacos", truck)(truck));
     }
 
     [Fact]

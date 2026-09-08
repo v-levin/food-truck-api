@@ -90,7 +90,7 @@ loaded, `503` otherwise. Not rate-limited, not part of the API surface.
 ```bash
 dotnet run --project src/FoodTruckApi                     # http://localhost:5065
 dotnet run --project src/FoodTruckApi --launch-profile https   # + https://localhost:7007
-dotnet test                                               # 107 tests
+dotnet test                                               # 112 tests
 ```
 
 Then open `http://localhost:5065/swagger`, or:
@@ -154,8 +154,9 @@ needs more than string comparison, so there are two problems solved separately.
 | `Excludes` | the negated part of `everything except / but <X>` (run through the same normalizer) |
 
 So `everything except for hot dogs` → `ServesEverything`, `Excludes = ["dog"]`.
-A search for `tacos` matches it (0.85); a search for `hot dogs` does not, because
-`dog` is in `Excludes` and the query normalizes to the same token.
+A search for `tacos` matches it (0.85); searches for `hot dogs`, `frankfurter` or
+`bratwurst` do not — the exclusion check goes through `FoodAliases`, so synonyms
+of the ruled-out food are ruled out too.
 
 ### 2. Similarity — `HybridFoodMatcher`
 
@@ -180,8 +181,8 @@ score is `max(catch-all, lexical, semantic)`, and a truck is returned when it is
 
 - The embedding model is tiny (22 MiB, quantized) — it reliably bridges near-paraphrases
   but not loose conceptual leaps; the alias table carries the common cuisine/synonym cases.
-- The exclusion is token-literal: `everything except hot dogs` won't rule out a
-  search for `frankfurters`.
+- The exclusion covers the excluded word and its aliases, but not a semantic leap the
+  alias table doesn't know about.
 - `IFoodMatcher` / `IFoodEmbedder` are the seams — a stronger (or hosted) model is a
   DI swap.
 
@@ -276,7 +277,7 @@ Packages: `CsvHelper`, `Porter2Stemmer`, `FuzzySharp`, `SmartComponents.LocalEmb
 dotnet test
 ```
 
-107 xUnit tests: `Result` / `Coordinate` invariants, the CSV loader (real dataset →
+112 xUnit tests: `Result` / `Coordinate` invariants, the CSV loader (real dataset →
 exactly 158 trucks, quoted commas preserved), Haversine against known reference
 distances, the offering parser (catch-all + exclusions), the hybrid matcher
 (alias, fuzzy, catch-all, and one real-model semantic case), the handler

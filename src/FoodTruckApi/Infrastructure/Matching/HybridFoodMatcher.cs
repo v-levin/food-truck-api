@@ -55,16 +55,23 @@ internal sealed class HybridFoodMatcher : IFoodMatcher
 
         var offering = truck.Offering;
 
-        if (offering.ServesEverything && !queryTerms.Any(offering.Excludes.Contains))
+        // The operator explicitly opted out of these foods (matching synonyms too, e.g.
+        // "frankfurter" against "everything except for hot dogs"), so score nothing.
+        if (offering.ServesEverything && IsExcluded(queryTerms, offering.Excludes))
         {
-            return CatchAllScore;
+            return 0d;
         }
 
+        var catchAll = offering.ServesEverything ? CatchAllScore : 0d;
         var lexical = LexicalScore(queryTerms, offering.Terms);
         var semantic = SemanticScore(queryVector, _embeddingIndex.For(truck));
 
-        return Math.Max(lexical, semantic);
+        return Math.Max(catchAll, Math.Max(lexical, semantic));
     }
+
+    private static bool IsExcluded(IReadOnlyList<string> queryTerms, IReadOnlyList<string> excludes) =>
+        excludes.Count > 0
+        && queryTerms.Any(queryTerm => excludes.Any(excluded => FoodAliases.Related(queryTerm, excluded)));
 
     private static double LexicalScore(IReadOnlyList<string> queryTerms, IReadOnlyList<string> truckTerms)
     {
