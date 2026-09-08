@@ -5,7 +5,7 @@ namespace FoodTruckApi.Infrastructure.Csv;
 /// <summary>Opens the SF permit CSV that is compiled into this assembly as a resource.</summary>
 internal static class EmbeddedFoodTruckDataset
 {
-    internal const string ResourceName = "FoodTruckApi.Data.Mobile_Food_Facility_Permit.csv";
+    private const string ResourceName = "FoodTruckApi.Data.Mobile_Food_Facility_Permit.csv";
 
     public static Stream Open()
     {

@@ -37,17 +37,9 @@ public sealed class FindFoodTrucksRequestValidator
             return Result.Failure<FindFoodTrucksQuery>(errors);
         }
 
-        // Ranges were already checked above, so this is defensive.
-        var origin = Coordinate.Create(latitude.Value, longitude.Value);
-        if (origin.IsSuccess)
-        {
-            return new FindFoodTrucksQuery(origin.Value, amountOfResults, food);
-        }
-
-        var reKeyed = origin.Errors
-            .Select(e => e with { Code = e.Code.Replace("coordinate.", string.Empty) })
-            .ToArray();
-        return Result.Failure<FindFoodTrucksQuery>(reKeyed);
+        // ParseCoordinate already enforced the ranges, so Create cannot fail here.
+        var origin = Coordinate.Create(latitude.Value, longitude.Value).Value;
+        return new FindFoodTrucksQuery(origin, amountOfResults, food);
     }
 
     private static double? ParseCoordinate(

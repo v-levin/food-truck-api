@@ -13,7 +13,7 @@ internal static class FoodTextNormalizer
 {
     private static readonly EnglishPorter2Stemmer Stemmer = new();
 
-    // Separators seen in the dataset's FoodItems column, plus common conjunctions.
+    // Delimiters seen in the dataset's FoodItems column.
     private static readonly char[] TermSeparators = { ':', ';', ',', '&', '/', '|', '.', '(', ')', '\n', '\r', '\t' };
 
     private static readonly HashSet<string> StopWords = new(StringComparer.Ordinal)
@@ -24,7 +24,10 @@ internal static class FoodTextNormalizer
         "hot", "cold", "fresh", "homemade", "prepackaged", "pre", "packaged", "premade",
     };
 
-    /// <summary>Normalized, stemmed keywords for a dataset food description.</summary>
+    /// <summary>
+    /// Normalized, stemmed keywords for a piece of food text. Applied identically to the
+    /// dataset's descriptions and to the caller's query so the two can be compared.
+    /// </summary>
     public static IReadOnlyList<string> ExtractTerms(string? foodItems)
     {
         if (string.IsNullOrWhiteSpace(foodItems))
@@ -48,9 +51,6 @@ internal static class FoodTextNormalizer
 
         return terms;
     }
-
-    /// <summary>Normalized, stemmed keywords for a caller's free-text query.</summary>
-    public static IReadOnlyList<string> ExtractQueryTerms(string? query) => ExtractTerms(query);
 
     /// <summary>Splits a phrase into normalized, stemmed, non-noise tokens.</summary>
     private static IEnumerable<string> Tokenize(string segment)

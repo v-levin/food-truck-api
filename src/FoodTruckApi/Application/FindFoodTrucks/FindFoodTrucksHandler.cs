@@ -2,7 +2,6 @@ using FoodTruckApi.Application.Abstractions;
 using FoodTruckApi.Configuration;
 using FoodTruckApi.Domain;
 using FoodTruckApi.Domain.Common;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FoodTruckApi.Application.FindFoodTrucks;

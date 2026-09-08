@@ -25,7 +25,7 @@ internal sealed class LexicalFoodMatcher : IFoodMatcher
 
     public Func<FoodTruck, double> ForQuery(string foodQuery)
     {
-        var queryTerms = FoodTextNormalizer.ExtractQueryTerms(foodQuery);
+        var queryTerms = FoodTextNormalizer.ExtractTerms(foodQuery);
         return truck => Score(queryTerms, truck);
     }
 

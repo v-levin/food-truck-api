@@ -9,7 +9,6 @@ using FoodTruckApi.Infrastructure.Geo;
 using FoodTruckApi.Infrastructure.Matching;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,8 +36,9 @@ builder.Services.AddOptions<RateLimitingOptions>()
 builder.Services.AddOptions<CorsOptions>()
     .Bind(builder.Configuration.GetSection(CorsOptions.SectionName));
 
-// Own all input validation ourselves so failures flow through the Result pipeline and
-// come back as a single Problem Details payload listing every problem.
+// All query parameters bind as strings, so the model binder never rejects a request on
+// its own; this keeps it that way if a typed property is ever added, so every failure
+// still flows through the validator and comes back as one Problem Details payload.
 builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = true);
 

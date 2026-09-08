@@ -28,13 +28,8 @@ internal static class ResultActionExtensions
             return controller.ValidationProblem(modelState);
         }
 
-        var statusCode = result.Error.Type switch
-        {
-            ErrorType.NotFound => StatusCodes.Status404NotFound,
-            ErrorType.Conflict => StatusCodes.Status409Conflict,
-            _ => StatusCodes.Status500InternalServerError,
-        };
-
-        return controller.Problem(statusCode: statusCode, detail: result.Error.Message);
+        return controller.Problem(
+            statusCode: StatusCodes.Status500InternalServerError,
+            detail: result.Error.Message);
     }
 }
