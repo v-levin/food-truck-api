@@ -20,8 +20,8 @@ public sealed record FoodTruck(
     string FoodItems)
 {
     /// <summary>
-    /// Normalized, stemmed keywords derived from <see cref="FoodItems"/>, used for food
-    /// matching. Populated once when the dataset is loaded; empty until then.
+    /// Structured view of <see cref="FoodItems"/> used for matching. Populated once when
+    /// the dataset is loaded; <see cref="FoodOffering.Empty"/> until then.
     /// </summary>
-    public IReadOnlyList<string> FoodTerms { get; init; } = Array.Empty<string>();
+    public FoodOffering Offering { get; init; } = FoodOffering.Empty;
 }

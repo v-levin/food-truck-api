@@ -22,8 +22,42 @@ internal static class TestData
             Location: Point(latitude, longitude),
             FoodItems: foodItems)
         {
-            FoodTerms = FoodTextNormalizer.ExtractTerms(foodItems),
+            Offering = FoodOfferingParser.Parse(foodItems),
         };
+}
+
+/// <summary>
+/// A fast, deterministic <see cref="IFoodEmbedder"/> for tests that boot the app but don't
+/// exercise semantic matching — avoids loading the real ONNX model per test class.
+/// </summary>
+internal sealed class StubFoodEmbedder : IFoodEmbedder
+{
+    public float[] Embed(string text)
+    {
+        var vector = new float[384];
+        uint hash = 2166136261;
+        foreach (var ch in text ?? string.Empty)
+        {
+            hash = (hash ^ ch) * 16777619;
+        }
+
+        var random = new Random((int)hash);
+        double sumOfSquares = 0d;
+        for (var i = 0; i < vector.Length; i++)
+        {
+            var component = (float)(random.NextDouble() * 2d - 1d);
+            vector[i] = component;
+            sumOfSquares += component * (double)component;
+        }
+
+        var magnitude = Math.Sqrt(sumOfSquares);
+        for (var i = 0; i < vector.Length; i++)
+        {
+            vector[i] = (float)(vector[i] / magnitude);
+        }
+
+        return vector;
+    }
 }
 
 /// <summary>An <see cref="IFoodMatcher"/> that returns scripted scores keyed by truck name.</summary>

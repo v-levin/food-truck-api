@@ -92,7 +92,7 @@ internal static class FoodTruckCsvLoader
             Location: location.Value,
             FoodItems: record.FoodItems)
         {
-            FoodTerms = FoodTextNormalizer.ExtractTerms(record.FoodItems),
+            Offering = FoodOfferingParser.Parse(record.FoodItems),
         };
     }
 

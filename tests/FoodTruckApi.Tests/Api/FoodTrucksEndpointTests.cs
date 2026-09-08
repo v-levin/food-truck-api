@@ -1,17 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace FoodTruckApi.Tests.Api;
 
-public class FoodTrucksEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class FoodTrucksEndpointTests : IClassFixture<TestWebApplicationFactory>
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly HttpClient _client;
 
-    public FoodTrucksEndpointTests(WebApplicationFactory<Program> factory) =>
+    public FoodTrucksEndpointTests(TestWebApplicationFactory factory) =>
         _client = factory.CreateClient();
 
     [Fact]

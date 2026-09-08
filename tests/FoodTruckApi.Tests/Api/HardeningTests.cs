@@ -1,7 +1,4 @@
 using System.Net;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 
 namespace FoodTruckApi.Tests.Api;
 
@@ -9,16 +6,10 @@ public class HardeningTests
 {
     private const string ValidQuery = "/api/food-trucks?latitude=37.7955&longitude=-122.3937";
 
-    private static WebApplicationFactory<Program> FactoryWith(params (string Key, string Value)[] settings) =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-            builder.ConfigureAppConfiguration((_, config) =>
-                config.AddInMemoryCollection(
-                    settings.ToDictionary(s => s.Key, s => (string?)s.Value))));
-
     [Fact]
     public async Task Responses_carry_the_defensive_security_headers()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new TestWebApplicationFactory();
         var client = factory.CreateClient();
 
         var response = await client.GetAsync(ValidQuery);
@@ -32,7 +23,7 @@ public class HardeningTests
     [Fact]
     public async Task Exceeding_the_rate_limit_returns_429()
     {
-        using var factory = FactoryWith(
+        using var factory = new TestWebApplicationFactory().WithSettings(
             ("RateLimiting:PermitLimit", "3"),
             ("RateLimiting:WindowSeconds", "60"));
         var client = factory.CreateClient();
@@ -54,7 +45,7 @@ public class HardeningTests
     [Fact]
     public async Task Rate_limit_partitions_by_the_configured_client_header()
     {
-        using var factory = FactoryWith(
+        using var factory = new TestWebApplicationFactory().WithSettings(
             ("RateLimiting:PermitLimit", "2"),
             ("RateLimiting:WindowSeconds", "60"),
             ("RateLimiting:ClientIdentifierHeader", "X-Forwarded-For"));
@@ -79,7 +70,7 @@ public class HardeningTests
     [Fact]
     public async Task No_cors_headers_are_sent_by_default()
     {
-        using var factory = new WebApplicationFactory<Program>();
+        using var factory = new TestWebApplicationFactory();
         var client = factory.CreateClient();
 
         var request = new HttpRequestMessage(HttpMethod.Get, ValidQuery);
@@ -92,7 +83,7 @@ public class HardeningTests
     [Fact]
     public async Task A_configured_origin_is_allowed()
     {
-        using var factory = FactoryWith(("Cors:AllowedOrigins:0", "https://app.example.com"));
+        using var factory = new TestWebApplicationFactory().WithSettings(("Cors:AllowedOrigins:0", "https://app.example.com"));
         var client = factory.CreateClient();
 
         var request = new HttpRequestMessage(HttpMethod.Get, ValidQuery);

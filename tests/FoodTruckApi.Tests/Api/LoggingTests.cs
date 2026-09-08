@@ -1,7 +1,4 @@
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace FoodTruckApi.Tests.Api;
@@ -10,17 +7,11 @@ public class LoggingTests
 {
     private const string ValidQuery = "/api/food-trucks?latitude=37.7955&longitude=-122.3937";
 
-    private static (WebApplicationFactory<Program> Factory, RecordingLoggerProvider Logs) Build(
+    private static (TestWebApplicationFactory Factory, RecordingLoggerProvider Logs) Build(
         params (string Key, string Value)[] settings)
     {
         var logs = new RecordingLoggerProvider();
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureAppConfiguration((_, config) =>
-                config.AddInMemoryCollection(
-                    settings.ToDictionary(s => s.Key, s => (string?)s.Value)));
-            builder.ConfigureLogging(logging => logging.AddProvider(logs));
-        });
+        var factory = new TestWebApplicationFactory().WithSettings(settings).CapturingLogsTo(logs);
         return (factory, logs);
     }
 

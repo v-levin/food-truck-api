@@ -82,13 +82,15 @@ loaded, `503` otherwise. Not rate-limited, not part of the API surface.
 
 - .NET SDK 8.0 (pinned in `global.json`). Or open the repo in the provided
   `.devcontainer` (VS Code → "Reopen in Container").
+- **Network access on the first build** — `SmartComponents.LocalEmbeddings` downloads
+  the ~22 MiB embedding model then (cached afterwards; it never leaves the machine at runtime).
 
 ### Commands
 
 ```bash
 dotnet run --project src/FoodTruckApi                     # http://localhost:5065
 dotnet run --project src/FoodTruckApi --launch-profile https   # + https://localhost:7007
-dotnet test                                               # 101 tests
+dotnet test                                               # 107 tests
 ```
 
 Then open `http://localhost:5065/swagger`, or:
@@ -136,32 +138,52 @@ return zero results. The dataset is treated as a point-in-time snapshot and
 
 ## How food matching works
 
-Both the dataset's `FoodItems` text and the caller's `food` query are reduced
-through the **same** pipeline (`FoodTextNormalizer`):
+The `FoodItems` field is real-world messy — `"Tacos: Burritos"`, but also
+`"Everything"`, `"everything except for hot dogs"`, `"Multiple Food Trucks & Food
+Types"`, `"MOMO Spicy Noodle: POPO's Noodle"`. Matching a query well against that
+needs more than string comparison, so there are two problems solved separately.
 
-1. split on the dataset's separators (`: ; , & / . |`)
-2. lower-case, strip punctuation
-3. drop noise words (`hot`, `and`, `various`, `food`, …)
-4. **Porter2 stem** each token (so `tacos` and `taco` collapse to one form)
+### 1. Structure — `FoodOffering` (parsed once at load)
 
-Each truck's keywords are computed **once at load time** (`FoodTruck.FoodTerms`).
+`FoodOfferingParser` turns each listing into:
 
-`LexicalFoodMatcher` then scores a query against a truck (0–1):
+| Field | From |
+|---|---|
+| `Terms` | the listed foods, normalized + Porter2-stemmed (so `tacos` ↔ `taco`) |
+| `ServesEverything` | catch-all phrasing — `Everything`, `Multiple … Food Types` |
+| `Excludes` | the negated part of `everything except / but <X>` (run through the same normalizer) |
 
-- exact stem match → `1.0`
-- otherwise `FuzzySharp.WeightedRatio` (which blends full and substring similarity),
-  scaled to 0–1, with anything below ~`0.55` treated as no match
-- terms shorter than 4 characters must match exactly — short tokens collide far
-  too easily (`ice` is a substring of `rice`), so they are never fuzzy-matched
+So `everything except for hot dogs` → `ServesEverything`, `Excludes = ["dog"]`.
+A search for `tacos` matches it (0.85); a search for `hot dogs` does not, because
+`dog` is in `Excludes` and the query normalizes to the same token.
 
-The truck's score is its best query-term / truck-term pair. A truck is included
-when its score ≥ `FoodMatching:MatchThreshold` (default `0.7`).
+### 2. Similarity — `HybridFoodMatcher`
 
-This is **lexical only** — it handles plurals (`tacos` → `taco`), typos
-(`burito` → `burrito` ≈ 0.92) and multi-word queries (`korean bbq`), but it has
-no concept of meaning, so `pho` will not match `vietnamese soup`. A semantic
-(embedding-based) matcher could be dropped in behind `IFoodMatcher`; it was
-considered and deferred to keep the POC self-contained and offline.
+For a listed-food match it takes the strongest of three signals:
+
+| Signal | Example | Score |
+|---|---|---|
+| exact stem | `burritos` ↔ `Burritos` | `1.0` |
+| **alias** (`FoodAliases`, ~16 curated groups) | `bbq` ↔ `barbecue`, `mexican` ↔ a taco truck | `0.9` |
+| **fuzzy** (`FuzzySharp.WeightedRatio`, floored at ~0.55) | `burito` → `burrito` ≈ `0.92` | `0.55–0.89` |
+| **semantic** (on-device `bge-micro-v2` embedding, cosine) | `italian` → a pizza/pasta listing | scaled from `SemanticFloor`→`SemanticStrong` |
+
+Terms shorter than 4 characters must match exactly or via an alias — short tokens
+collide too easily under fuzzy matching (`ice` is inside `rice`).
+
+Each truck's listing is embedded **once at startup** (`FoodEmbeddingIndex`,
+~150 ms for the whole dataset); the query is embedded once per request. The final
+score is `max(catch-all, lexical, semantic)`, and a truck is returned when it is
+≥ `FoodMatching:MatchThreshold` (default `0.7`).
+
+### Limits
+
+- The embedding model is tiny (22 MiB, quantized) — it reliably bridges near-paraphrases
+  but not loose conceptual leaps; the alias table carries the common cuisine/synonym cases.
+- The exclusion is token-literal: `everything except hot dogs` won't rule out a
+  search for `frankfurters`.
+- `IFoodMatcher` / `IFoodEmbedder` are the seams — a stronger (or hosted) model is a
+  DI swap.
 
 ---
 
@@ -177,7 +199,9 @@ on invalid values):
     "MaxAmountOfResults": 50        // upper bound; DefaultAmountOfResults must not exceed it
   },
   "FoodMatching": {
-    "MatchThreshold": 0.7           // 0..1; higher is stricter (useful range ~0.55–1.0)
+    "MatchThreshold": 0.7,          // 0..1; overall bar for including a truck
+    "SemanticFloor": 0.58,          // cosine at/below this adds no semantic score
+    "SemanticStrong": 0.72          // cosine at/above this is a full semantic match
   },
   "RateLimiting": {
     "PermitLimit": 100,             // requests per window, per client
@@ -203,12 +227,12 @@ instead of one per layer, no MediatR/CQRS.
 Api            controllers, request/response contracts, validation, Result → HTTP
   │
 Application    FindFoodTrucksHandler, FindFoodTrucksQuery, and the ports:
-  │              IFoodTruckRepository, IFoodMatcher, IDistanceCalculator
+  │              IFoodTruckRepository, IFoodMatcher, IFoodEmbedder, IDistanceCalculator
   │
-Domain         FoodTruck, Coordinate, Result / Error   (references nothing)
+Domain         FoodTruck, FoodOffering, Coordinate, Result / Error   (references nothing)
   ▲
-Infrastructure adapters: CsvFoodTruckRepository, LexicalFoodMatcher,
-               HaversineDistanceCalculator
+Infrastructure adapters: CsvFoodTruckRepository, HybridFoodMatcher,
+               LocalFoodEmbedder + FoodEmbeddingIndex, HaversineDistanceCalculator
 ```
 
 Key decisions:
@@ -220,9 +244,12 @@ Key decisions:
 - **All input validation is owned by the app** (`FindFoodTrucksRequestValidator`),
   not by `[ApiController]` model binding, so every problem is collected into one
   response.
-- **Fail fast at startup** — the dataset is loaded and the options are validated
-  during startup, not on the first request.
+- **Fail fast at startup** — the dataset is loaded, the embedding index is built,
+  and the options are validated during startup, not on the first request.
 - **Haversine** great-circle distance; no spatial index needed at this size.
+
+Packages: `CsvHelper`, `Porter2Stemmer`, `FuzzySharp`, `SmartComponents.LocalEmbeddings`
+(preview — on-device embeddings), `Swashbuckle`.
 
 ---
 
@@ -249,12 +276,14 @@ Key decisions:
 dotnet test
 ```
 
-101 xUnit tests: `Result` / `Coordinate` invariants, the CSV loader (real dataset →
+107 xUnit tests: `Result` / `Coordinate` invariants, the CSV loader (real dataset →
 exactly 158 trucks, quoted commas preserved), Haversine against known reference
-distances, the text normalizer and fuzzy matcher, the handler (ordering,
-threshold, limits — with a stub matcher), request validation, and full HTTP
-integration via `WebApplicationFactory` (validation, config overrides, rate
-limiting, security headers, CORS, logging, health check).
+distances, the offering parser (catch-all + exclusions), the hybrid matcher
+(alias, fuzzy, catch-all, and one real-model semantic case), the handler
+(ordering, threshold, limits — with a stub matcher), request validation, and full
+HTTP integration via `WebApplicationFactory` (validation, config overrides, rate
+limiting, security headers, CORS, logging, health check). Integration tests swap
+in a stub embedder so they don't load the model.
 
 ---
 

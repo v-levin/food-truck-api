@@ -123,7 +123,12 @@ builder.Services.AddSingleton<IFoodTruckRepository>(serviceProvider =>
         serviceProvider.GetRequiredService<ILogger<CsvFoodTruckRepository>>()));
 
 builder.Services.AddSingleton<IDistanceCalculator, HaversineDistanceCalculator>();
-builder.Services.AddSingleton<IFoodMatcher, LexicalFoodMatcher>();
+builder.Services.AddSingleton<IFoodEmbedder, LocalFoodEmbedder>();
+builder.Services.AddSingleton(serviceProvider => FoodEmbeddingIndex.Build(
+    serviceProvider.GetRequiredService<IFoodTruckRepository>().GetAll(),
+    serviceProvider.GetRequiredService<IFoodEmbedder>(),
+    serviceProvider.GetRequiredService<ILogger<FoodEmbeddingIndex>>()));
+builder.Services.AddSingleton<IFoodMatcher, HybridFoodMatcher>();
 builder.Services.AddScoped<FindFoodTrucksHandler>();
 builder.Services.AddSingleton<FindFoodTrucksRequestValidator>();
 
@@ -132,8 +137,10 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-// Fail fast: load and validate the dataset during startup instead of on the first request.
+// Fail fast: load the dataset and build the embedding index during startup instead of on
+// the first request (this also warms the embedding model).
 app.Services.GetRequiredService<IFoodTruckRepository>();
+app.Services.GetRequiredService<FoodEmbeddingIndex>();
 
 var searchOptions = app.Services.GetRequiredService<IOptions<FoodTruckSearchOptions>>().Value;
 var matchingOptions = app.Services.GetRequiredService<IOptions<FoodMatchingOptions>>().Value;
