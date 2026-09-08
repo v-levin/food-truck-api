@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using FoodTruckApi.Api.Health;
 using FoodTruckApi.Api.Middleware;
 using FoodTruckApi.Api.Validation;
 using FoodTruckApi.Application.Abstractions;
@@ -126,6 +127,9 @@ builder.Services.AddSingleton<IFoodMatcher, LexicalFoodMatcher>();
 builder.Services.AddScoped<FindFoodTrucksHandler>();
 builder.Services.AddSingleton<FindFoodTrucksRequestValidator>();
 
+builder.Services.AddHealthChecks()
+    .AddCheck<DatasetHealthCheck>("dataset");
+
 var app = builder.Build();
 
 // Fail fast: load and validate the dataset during startup instead of on the first request.
@@ -170,6 +174,9 @@ if (corsOrigins.Length > 0)
 }
 
 app.UseRateLimiter();
+
+// Liveness/readiness probe; not rate-limited and not in the API surface.
+app.MapHealthChecks("/health").DisableRateLimiting();
 
 app.MapControllers();
 
